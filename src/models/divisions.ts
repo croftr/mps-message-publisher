@@ -46,5 +46,6 @@ export interface MemberVoting {
 
 export interface Vote {
   id: number,
-  title: string  
+  title: string,
+  date: string
 }
