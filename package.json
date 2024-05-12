@@ -1,0 +1,30 @@
+{
+  "name": "mps-message-publisher",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.ts",
+  "scripts": {
+    "build": "npx tsc",
+    "start": "npx tsc && node --env-file .env dist/index.js | pino-pretty",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.1618.0",
+    "fs": "^0.0.1-security",
+    "neo4j-driver": "^5.20.0",
+    "node-fetch": "^2.7.0",
+    "pino": "^9.0.0",
+    "pino-pretty": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  },
+  "imports": {
+    "#logger": "./logger.ts"
+  }
+}
