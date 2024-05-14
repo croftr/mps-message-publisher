@@ -10,8 +10,6 @@ const logger = require('./src/logger');
 
 const CREATE_MPS = process.env.CREATE_MPS === "true" ? true : false;
 const CREATE_DIVISIONS = process.env.CREATE_DIVISIONS === "true" ? true : false;
-const CREATE_PARTIES = process.env.CREATE_PARTIES === "true" ? true : false;
-const CREATE_DONATIONS = process.env.CREATE_DONATIONS === "true" ? true : false;
 const JUST_PUBLISH_MESSAGES = process.env.JUST_PUBLISH_MESSAGES === "true" ? true : false;
 const CREATE_ONLY_NEW_DIVISIONS = process.env.CREATE_ONLY_NEW_DIVISIONS === "true" ? true : false;
 
@@ -39,13 +37,9 @@ const sortMps = (a: Mp, b: Mp) => {
 
 const go = async () => {
 
-  if (CREATE_MPS) {
-    logger.info(`Node Creation plan`);
-    logger.info(`Creating PARTIES ${CREATE_PARTIES}`);
-    logger.info(`Creating MPS: ${CREATE_MPS}`);
-    logger.info(`Creating DIVISIONS ${CREATE_DIVISIONS}`);
-    logger.info(`Creating DONATIONS ${CREATE_DONATIONS}`);
-  }
+  logger.info(`Node Creation plan`);
+  logger.info(`Creating MPS: ${CREATE_MPS}`);
+  logger.info(`Creating DIVISIONS ${CREATE_DIVISIONS}`);
 
   await setupNeo();
 
@@ -60,14 +54,6 @@ const go = async () => {
   // Start timing
   const totalTimeStart = performance.now();
   let timingStart = performance.now();
-
-  if (CREATE_PARTIES) {
-    //create parties
-    await createParties();
-    endAndPrintTiming(timingStart, 'created Parties');
-  }
-
-
 
   if (CREATE_DIVISIONS) {
     //create all the divisions     
@@ -96,26 +82,26 @@ const go = async () => {
 
     logger.debug(`Created ${neoCreateCount} divisions in Neo4j`);
 
-  } else if (CREATE_ONLY_NEW_DIVISIONS) {    
+  } else if (CREATE_ONLY_NEW_DIVISIONS) {
     //get all house of commons votes from specified data only and publish them to a queue 
 
     const today = new Date();
     const fromData = new Date(today);
-  
+
     // Subtract 7 days (in milliseconds) to get last week's date
     fromData.setDate(fromData.getDate() - Number(process.env.CREATE_NEW_DIVISIONS_FROM_DAYS_AGO || 7));
-  
+
     // Format the date components
     const year = fromData.getFullYear();
     const month = String(fromData.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
     const day = String(fromData.getDate()).padStart(2, '0');
-  
+
     const formattedFromDate = `${year}-${month}-${day}`;
 
     logger.info(`Getting all house of commons votes since ${formattedFromDate}`)
 
     const votesSinceDate: Array<Division> = await getCommonsVotesAfterDate(formattedFromDate);
-  
+
     for (let vote of votesSinceDate) {
       // @ts-ignore      
       await publishDivisionMessage(vote);
@@ -164,11 +150,6 @@ const go = async () => {
   }
 
   endAndPrintTiming(timingStart, 'created MPs');
-
-  if (CREATE_DONATIONS) {
-    await createDonations();
-    endAndPrintTiming(timingStart, 'created Donations');
-  }
 
   endAndPrintTiming(totalTimeStart, 'Workflow complete');
   logger.info('THE END');
