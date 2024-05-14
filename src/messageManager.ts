@@ -60,7 +60,7 @@ export const publishDivisionMessage = async (division: Division) => {
         };
 
         await sqs.sendMessage(params).promise();
-        logger.info(`MP message sent for ${division.DivisionId} ${division.Title} ${division.Date}`);
+        logger.info(`Division message sent for ${division.DivisionId} ${division.Title} ${division.Date}`);
 
     } catch (error) {
         logger.error(`Error sending message ${error}`);        
