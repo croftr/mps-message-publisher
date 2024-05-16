@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { log } from "console";
 const logger = require('./logger');
 
 // Load your AWS credentials (replace placeholders with your actual values)
@@ -29,7 +30,7 @@ export const updateObject = async () => {
         await s3Client.send(command);
         logger.info("Object updated successfully.");
     } catch (err) {
-        logger.error("Error updating object:", err);
+        console.error(`Error uploading to ${bucketName}`, err)
     }
 }
 
