@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, getSignedUrl } from "@aws-sdk/client-s3";
 
 const logger = require('./logger');
 
