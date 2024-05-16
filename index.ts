@@ -36,6 +36,8 @@ const sortMps = (a: Mp, b: Mp) => {
 
 const go = async () => {
 
+  logger.debug(`Hello is anyone there?`);
+
   await updateObject();
 
   // logger.info(`Node Creation plan`);
