@@ -18,9 +18,6 @@ export const updateObject = async () => {
         chips: "yes"
     };
 
-    updateObject(bucketName, key, newContent);
-
-
     try {
         const params = {
             Bucket: bucketName,
