@@ -65,6 +65,8 @@ export const getObject = async () => {
 
         let data = await response.json();
 
+        logger.info(`Got votesLastRunDate from S3 ${data.votesLastRunDate}`);
+
         return data;
 
 
