@@ -30,7 +30,8 @@ export const updateObject = async () => {
         await s3Client.send(command);
         logger.info("Object updated successfully.");
     } catch (err) {
-        console.error(`Error uploading to ${bucketName}`, err)
+        logger.info("error is ${err}" );
+        console.log(`Error uploading to ${bucketName}`, err)
     }
 }
 
