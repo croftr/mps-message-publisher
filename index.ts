@@ -2,9 +2,8 @@ import { getMps, getAllDivisions, getCommonsVotesAfterDate } from "./src/apicall
 import { createMpNode, createDivisionNode, setupNeo } from "./src/neoManager";
 import { Mp, MPMessage } from "./src/models/mps";
 import { Division } from "./src/models/divisions";
-import { createParties } from "./src/nodeManager";
-import { createDonations } from "./src/donationsManager";
 import { publishMpMessage, publishDivisionMessage } from "./src/messageManager";
+import { updateObject } from "./src/s3Manager";
 
 const logger = require('./src/logger');
 
