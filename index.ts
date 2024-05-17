@@ -4,7 +4,7 @@ import { Mp, MPMessage } from "./src/models/mps";
 import { Division } from "./src/models/divisions";
 import { publishMpMessage, publishDivisionMessage } from "./src/messageManager";
 import { getObject, putObject } from "./src/s3Manager";
-import fs from "fs";
+import { exec } from "child_process";
 
 const logger = require('./src/logger');
 
@@ -38,10 +38,6 @@ const sortMps = (a: Mp, b: Mp) => {
 const go = async () => {
 
   try {
-
-
-
-    fs.writeFileSync('shutdown.txt', 'Hey there!');
 
     logger.info(`Node Creation plan`);
     logger.info(`Creating MPS: ${CREATE_MPS}`);
@@ -181,7 +177,13 @@ const go = async () => {
     console.error("Error", error);
 
   } finally {
-    fs.writeFileSync('shutdown.txt', 'Hey there!');
+    exec('shutdown -h now', (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error executing shutdown: ${error}`);
+        return;
+      }
+      console.log(`Shutdown command executed successfully.`);
+    });    
   }
 
 }
