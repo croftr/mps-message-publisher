@@ -177,14 +177,13 @@ const go = async () => {
     console.error("Error", error);
 
   } finally {
-    // exec('shutdown -h now', (error, stdout, stderr) => {
-    //   if (error) {
-    //     console.error(`Error executing shutdown: ${error}`);
-    //     return;
-    //   }
-    //   console.log(`Shutdown command executed successfully.`);
-    // });    
-    logger.info("finally section")
+    exec('shutdown -h now', (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error executing shutdown: ${error}`);
+        return;
+      }
+      console.log(`Shutdown command executed successfully.`);
+    });    
   }
 
 }
