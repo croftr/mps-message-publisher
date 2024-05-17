@@ -4,7 +4,7 @@ import { Mp, MPMessage } from "./src/models/mps";
 import { Division } from "./src/models/divisions";
 import { publishMpMessage, publishDivisionMessage } from "./src/messageManager";
 import { getObject, putObject } from "./src/s3Manager";
-import { P } from "pino";
+import fs from "fs";
 
 const logger = require('./src/logger');
 
@@ -37,139 +37,155 @@ const sortMps = (a: Mp, b: Mp) => {
 
 const go = async () => {
 
-  logger.info(`Node Creation plan`);
-  logger.info(`Creating MPS: ${CREATE_MPS}`);
-  logger.info(`Creating DIVISIONS ${CREATE_DIVISIONS}`);
+  try {
 
-  await setupNeo();
 
-  const allMps: Array<Mp> = [];
-  const allDivisions: Array<Division> = [];
 
-  const MAX_LOOPS = 1000;
-  let skip = 0;
+    fs.writeFileSync('shutdown.txt', 'Hey there!');
 
-  let neoCreateCount = 0;
+    logger.info(`Node Creation plan`);
+    logger.info(`Creating MPS: ${CREATE_MPS}`);
+    logger.info(`Creating DIVISIONS ${CREATE_DIVISIONS}`);
 
-  // Start timing
-  const totalTimeStart = performance.now();
-  let timingStart = performance.now();
+    await setupNeo();
 
-  if (CREATE_DIVISIONS) {
-    //create all the divisions     
+    const allMps: Array<Mp> = [];
+    const allDivisions: Array<Division> = [];
+
+    const MAX_LOOPS = 1000;
+    let skip = 0;
+
+    let neoCreateCount = 0;
+
+    // Start timing
+    const totalTimeStart = performance.now();
+    let timingStart = performance.now();
+
+    if (CREATE_DIVISIONS) {
+      //create all the divisions     
+      skip = 0;
+      for (let i = 0; i < MAX_LOOPS; i++) {
+        //get all the divisions from the API (25 at a time) and store them in memory        
+        const divisions: Array<Division> = await getAllDivisions(skip, 25);
+        skip += 25;
+        let fetchCount = divisions.length;
+
+        allDivisions.push(...divisions)
+
+        if (fetchCount < 25) {
+          break;
+        }
+      }
+
+      logger.debug(`Created ${allDivisions.length} divisions in memory`);
+
+      neoCreateCount = 0;
+      for (let i of allDivisions) {
+        //loop through all mps in memory and store them in database
+        await createDivisionNode(i);
+        neoCreateCount = neoCreateCount + 1;
+      }
+
+      logger.debug(`Created ${neoCreateCount} divisions in Neo4j`);
+
+    } else if (CREATE_ONLY_NEW_DIVISIONS) {
+
+      try {
+
+
+        //get all house of commons votes from specified data only and publish them to a queue 
+
+        // const today = new Date();
+        // const fromData = new Date(today);
+
+        // // Subtract 7 days (in milliseconds) to get last week's date
+        // fromData.setDate(fromData.getDate() - Number(process.env.CREATE_NEW_DIVISIONS_FROM_DAYS_AGO || 7));
+
+        // // Format the date components
+        // const year = fromData.getFullYear();
+        // const month = String(fromData.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+        // const day = String(fromData.getDate()).padStart(2, '0');
+
+        // const formattedFromDate = `${year}-${month}-${day}`;
+
+        const object = await getObject();
+        // @ts-ignore    
+        const formattedFromDate = object.votesLastRunDate;
+
+        logger.info(`Getting all house of commons votes since ${formattedFromDate}`)
+
+        const votesSinceDate: Array<Division> = await getCommonsVotesAfterDate(formattedFromDate);
+
+        for (let vote of votesSinceDate) {
+          // @ts-ignore      
+          await publishDivisionMessage(vote);
+        }
+      } catch (error) {
+        logger.error("Error creating divisions")
+        console.error("error ", error)
+      }
+    }
+
+    // END timing
+    endAndPrintTiming(timingStart, 'created divisions');
+
+    // Start timing
+    timingStart = performance.now();
+
     skip = 0;
-    for (let i = 0; i < MAX_LOOPS; i++) {
-      //get all the divisions from the API (25 at a time) and store them in memory        
-      const divisions: Array<Division> = await getAllDivisions(skip, 25);
+
+    neoCreateCount = 0;
+
+    for (let i = 0; i < Number(process.env.MP_LOOPS); i++) {
+
+      const mps: Array<Mp> = await getMps(skip, Number(process.env.MP_TAKE_PER_LOOP));
+
       skip += 25;
-      let fetchCount = divisions.length;
+      allMps.push(...mps);
 
-      allDivisions.push(...divisions)
-
-      if (fetchCount < 25) {
+      if (mps.length < 20) {
         break;
       }
     }
 
-    logger.debug(`Created ${allDivisions.length} divisions in memory`);
+    allMps.sort(sortMps);
+    logger.debug(`Created ${allMps.length} MPs in memory`);
 
-    neoCreateCount = 0;
-    for (let i of allDivisions) {
-      //loop through all mps in memory and store them in database
-      await createDivisionNode(i);
-      neoCreateCount = neoCreateCount + 1;
-    }
+    if (CREATE_MPS) {
+      for (let i of allMps) {
 
-    logger.debug(`Created ${neoCreateCount} divisions in Neo4j`);
+        if (!JUST_PUBLISH_MESSAGES) {
+          await createMpNode(i);
+          neoCreateCount = neoCreateCount + 1;
+        }
 
-  } else if (CREATE_ONLY_NEW_DIVISIONS) {
+        //push mp to queue
+        const message: MPMessage = { id: i.id, name: i.nameDisplayAs };
+        await publishMpMessage(message);
 
-    try {
-
-
-      //get all house of commons votes from specified data only and publish them to a queue 
-
-      // const today = new Date();
-      // const fromData = new Date(today);
-
-      // // Subtract 7 days (in milliseconds) to get last week's date
-      // fromData.setDate(fromData.getDate() - Number(process.env.CREATE_NEW_DIVISIONS_FROM_DAYS_AGO || 7));
-
-      // // Format the date components
-      // const year = fromData.getFullYear();
-      // const month = String(fromData.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-      // const day = String(fromData.getDate()).padStart(2, '0');
-
-      // const formattedFromDate = `${year}-${month}-${day}`;
-
-      const object = await getObject();
-      // @ts-ignore    
-      const formattedFromDate = object.votesLastRunDate;
-
-      logger.info(`Getting all house of commons votes since ${formattedFromDate}`)
-
-      const votesSinceDate: Array<Division> = await getCommonsVotesAfterDate(formattedFromDate);
-
-      for (let vote of votesSinceDate) {
-        // @ts-ignore      
-        await publishDivisionMessage(vote);
       }
-    } catch (error) {
-      logger.error("Error creating divisions")
-      console.error("error ", error)
+      logger.debug(`Created ${neoCreateCount} MPs in Neo4j`);
     }
+
+    endAndPrintTiming(timingStart, 'created MPs');
+
+
+    endAndPrintTiming(totalTimeStart, 'Workflow complete');
+
+    await putObject();
+    logger.info('THE END');
+
+  } catch (error) {
+    // @ts-ignore      
+    logger.error(`An error has occured ${error.message}`);
+    console.error("Error", error);
+
+  } finally {
+    fs.writeFileSync('shutdown.txt', 'Hey there!');
   }
-
-  // END timing
-  endAndPrintTiming(timingStart, 'created divisions');
-
-  // Start timing
-  timingStart = performance.now();
-
-  skip = 0;
-
-  neoCreateCount = 0;
-
-  for (let i = 0; i < Number(process.env.MP_LOOPS); i++) {
-
-    const mps: Array<Mp> = await getMps(skip, Number(process.env.MP_TAKE_PER_LOOP));
-
-    skip += 25;
-    allMps.push(...mps);
-
-    if (mps.length < 20) {
-      break;
-    }
-  }
-
-  allMps.sort(sortMps);
-  logger.debug(`Created ${allMps.length} MPs in memory`);
-
-  if (CREATE_MPS) {
-    for (let i of allMps) {
-
-      if (!JUST_PUBLISH_MESSAGES) {
-        await createMpNode(i);
-        neoCreateCount = neoCreateCount + 1;
-      }
-
-      //push mp to queue
-      const message: MPMessage = { id: i.id, name: i.nameDisplayAs };
-      await publishMpMessage(message);
-
-    }
-    logger.debug(`Created ${neoCreateCount} MPs in Neo4j`);
-  }
-
-  endAndPrintTiming(timingStart, 'created MPs');
-
-
-  endAndPrintTiming(totalTimeStart, 'Workflow complete');
-
-  await putObject();
-  logger.info('THE END');
 
 }
 
 go();
+
 
