@@ -88,22 +88,6 @@ const go = async () => {
 
       try {
 
-
-        //get all house of commons votes from specified data only and publish them to a queue 
-
-        // const today = new Date();
-        // const fromData = new Date(today);
-
-        // // Subtract 7 days (in milliseconds) to get last week's date
-        // fromData.setDate(fromData.getDate() - Number(process.env.CREATE_NEW_DIVISIONS_FROM_DAYS_AGO || 7));
-
-        // // Format the date components
-        // const year = fromData.getFullYear();
-        // const month = String(fromData.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-        // const day = String(fromData.getDate()).padStart(2, '0');
-
-        // const formattedFromDate = `${year}-${month}-${day}`;
-
         const object = await getObject();
         // @ts-ignore    
         const formattedFromDate = object.votesLastRunDate;
