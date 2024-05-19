@@ -161,7 +161,7 @@ const go = async () => {
     console.error("Error", error);
 
   } finally {
-    exec('sudo shutdown -h +30', (error, stdout, stderr) => {
+    exec('sudo shutdown -h +1', (error, stdout, stderr) => {
       if (error) {
         console.error(`Error executing shutdown: ${error}`);
         return;
